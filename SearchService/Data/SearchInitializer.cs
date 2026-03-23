@@ -14,7 +14,7 @@ public static class SearchInitializer
             Console.WriteLine($"Collection {schemaName} has been created already.");
             return;
         }
-        catch (TypesenseApiNotFoundException e)
+        catch (TypesenseApiNotFoundException)
         {
             Console.WriteLine($"Collection {schemaName} has not been created yet.");
         }

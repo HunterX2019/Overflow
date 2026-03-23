@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Common;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using SearchService.Data;
@@ -14,17 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.AddServiceDefaults();
 
-builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
+await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
-    traceProviderBuilder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService(builder.Environment.ApplicationName))
-        .AddSource("Wolverine");
-});
-
-builder.Host.UseWolverine(opts =>
-{
-    opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
     opts.ListenToRabbitQueue("questions.search", cfg => { cfg.BindExchange("questions"); });
+    opts.ApplicationAssembly = typeof(Program).Assembly;
 });
 
 var typesenseUri = builder.Configuration["services:typesense:typesense:0"];
@@ -87,7 +81,7 @@ app.MapGet("/search", async (string query, ITypesenseClient client) =>
 app.MapGet("/search/similar-titles", async (string query, ITypesenseClient client) =>
 {
     var searchParams = new SearchParameters(query, "title");
-    
+
     try
     {
         var result = await client.Search<SearchQuestion>("questions", searchParams);
